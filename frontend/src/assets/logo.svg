@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="cyanGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F5D4" />
+      <stop offset="100%" stop-color="#00D2BE" />
+    </linearGradient>
+    <linearGradient id="redGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF2A1B" />
+      <stop offset="100%" stop-color="#E10600" />
+    </linearGradient>
+    <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Emblem Icon: Left side -->
+  <g transform="translate(15, 10)">
+    <!-- Racing Apex Curve (Cyan) -->
+    <path d="M 50 10 A 40 40 0 0 1 85 68" stroke="url(#cyanGlow)" stroke-width="5" stroke-linecap="round" fill="none" filter="url(#glowEffect)" />
+    <path d="M 40 18 A 32 32 0 0 1 76 68" stroke="url(#cyanGlow)" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.6" />
+    
+    <!-- Telemetry Pulse Waveform (Racing Red) -->
+    <path d="M 60 52 L 67 42 L 73 60 L 78 28 L 84 56 L 89 44 L 94 52" stroke="url(#redGlow)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#glowEffect)" />
+    
+    <!-- Pitwall Headset & Antenna (Cyan & Red) -->
+    <path d="M 32 60 C 32 40 68 40 68 60" stroke="#F9FAFB" stroke-width="3.5" stroke-linecap="round" fill="none" />
+    <!-- Headset Earcups -->
+    <rect x="27" y="55" width="7" height="15" rx="3.5" fill="url(#cyanGlow)" />
+    <rect x="66" y="55" width="7" height="15" rx="3.5" fill="url(#cyanGlow)" />
+    <!-- Mic boom -->
+    <path d="M 68 68 C 68 76 56 78 50 78" stroke="url(#cyanGlow)" stroke-width="3" stroke-linecap="round" fill="none" />
+    <!-- Antenna Tower & Signals (Red) -->
+    <path d="M 46 68 L 50 56 L 54 68" stroke="url(#redGlow)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="50" cy="54" r="2.5" fill="url(#redGlow)" filter="url(#glowEffect)" />
+    <path d="M 43 53 A 8 8 0 0 1 57 53" stroke="url(#redGlow)" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.8" />
+  </g>
+
+  <!-- Typography: PITWALLIQ -->
+  <g transform="translate(130, 72)" font-family="system-ui, -apple-system, sans-serif">
+    <!-- PITWALL -->
+    <text x="0" y="0" font-size="44" font-weight="900" letter-spacing="3" fill="#F9FAFB">PITWALL</text>
+    <!-- IQ with glow -->
+    <text x="215" y="0" font-size="44" font-weight="900" letter-spacing="3" fill="url(#cyanGlow)" filter="url(#glowEffect)">IQ</text>
+    
+    <!-- Tagline -->
+    <text x="3" y="24" font-size="12" font-weight="600" letter-spacing="4" fill="#9CA3AF">AI RACE STRATEGIST</text>
+  </g>
+</svg>

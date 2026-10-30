@@ -3,6 +3,7 @@ from backend.app.providers.base import F1DataProvider
 from backend.app.providers.fastf1_provider import FastF1Provider
 from backend.app.schemas.f1 import (
     CircuitTrackMap,
+    GhostComparisonData,
     GrandPrixEvent,
     LapData,
     RaceDashboardData,
@@ -44,6 +45,14 @@ class F1Service:
         return await self.provider.get_circuit_map(
             season, round_number, session_name
         )
+
+    async def get_ghost_comparison(
+        self, season: int, round_number: int, session_name: str, driver1: str, driver2: str
+    ) -> GhostComparisonData:
+        return await self.provider.get_ghost_comparison(
+            season, round_number, session_name, driver1, driver2
+        )
+
 
 
 _default_service: F1Service | None = None

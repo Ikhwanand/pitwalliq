@@ -11,6 +11,7 @@ export default function Navbar({
   selectedSession = "Race",
   onSelectSession,
   isBackendConnected = true,
+  onOpenDataGhost,
 }) {
   return (
     <header className="bg-[#0b111e] border-b border-[#1f2937] px-4 py-3 select-none sticky top-0 z-50 shadow-md">
@@ -61,7 +62,7 @@ export default function Navbar({
               value={selectedRound}
               onChange={(e) => onSelectRound && onSelectRound(Number(e.target.value))}
               aria-label="Select Grand Prix"
-              className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer max-w-[190px] truncate"
+              className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer max-w-47.5 truncate"
             >
               {events.map((ev) => (
                 <option key={ev.round_number} value={ev.round_number} className="bg-[#111827] text-white">
@@ -89,8 +90,20 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Status Indicators */}
+        {/* Status Indicators & Data Ghost Button */}
         <div className="flex items-center gap-3">
+          {/* Data Ghost Modal Trigger Button */}
+          <button
+            onClick={onOpenDataGhost}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-linear-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-500/40 text-cyan-300 rounded-lg text-xs font-mono font-bold tracking-wider transition-all shadow-sm shadow-cyan-500/20 hover:shadow-cyan-500/40 cursor-pointer"
+          >
+            <Activity className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+            <span>DATA GHOST</span>
+            <span className="px-1 py-0.2 text-[9px] bg-cyan-400/20 rounded font-normal text-cyan-200">
+              VS
+            </span>
+          </button>
+
           <div className="flex items-center gap-2 bg-[#111827] border border-[#1f2937] px-3 py-1.5 rounded-full text-xs">
             <span
               className={`w-2 h-2 rounded-full ${

@@ -10,6 +10,7 @@ export default function LapPaceChart({
   onSelectDriver2,
   currentLap = 18,
   isPlaying = false,
+  onOpenDataGhost,
 }) {
   // Filter laps up to current simulated lap for real-time progressive plotting
   const visibleLaps = useMemo(() => {
@@ -139,6 +140,16 @@ export default function LapPaceChart({
           <span className="px-2 py-0.5 rounded bg-[#1f2937] text-[10px] font-tabular text-[#00d2be] font-bold">
             Pace Delta: {currentDelta}
           </span>
+          {onOpenDataGhost && (
+            <button
+              onClick={onOpenDataGhost}
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
+              title="Open full speed, throttle, and brake telemetry comparison"
+            >
+              <span>DATA GHOST</span>
+              <span className="text-[8px]">↗</span>
+            </button>
+          )}
         </div>
       </div>
 

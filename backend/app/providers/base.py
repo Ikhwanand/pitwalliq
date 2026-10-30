@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from backend.app.schemas.f1 import (
     CircuitTrackMap,
+    GhostComparisonData,
     GrandPrixEvent,
     LapData,
     RaceDashboardData,
@@ -36,3 +37,10 @@ class F1DataProvider(ABC):
         self, season: int, round_number: int, session_name: str
     ) -> CircuitTrackMap | None:
         """Extract circuit coordinates from car telemetry."""
+
+    @abstractmethod
+    async def get_ghost_comparison(
+        self, season: int, round_number: int, session_name: str, driver1: str, driver2: str
+    ) -> GhostComparisonData:
+        """Compare head-to-head lap telemetry for two drivers (Data Ghost)."""
+

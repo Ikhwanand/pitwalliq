@@ -10,6 +10,7 @@ export default function CircuitMap({
   selectedDriverCode = "VER",
   cars = [], // [{ driver_number, code, progress, team_color, isFocused }]
   trackStatus = "GREEN",
+  onSelectDriver,
 }) {
   // Compute normalized SVG path, scaled points, corners, and start/finish gate
   const { pathData, startFinishPoint, sfGate, turnMarkers, scaledPoints } = useMemo(() => {
@@ -333,7 +334,12 @@ export default function CircuitMap({
               const isFocused = car.isFocused || String(car.code) === String(selectedDriverCode);
 
               return (
-                <g key={car.driver_number} className="transition-all duration-75">
+                <g
+                  key={car.driver_number}
+                  id={`car-blip-${car.driver_number}`}
+                  className="transition-all duration-75 cursor-pointer"
+                  onClick={() => onSelectDriver && onSelectDriver(car.driver_number)}
+                >
                   {/* Ping Ring for focused driver - Native SVG animation without CSS transform offset */}
                   {isFocused && (
                     <circle

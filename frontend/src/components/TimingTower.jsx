@@ -73,7 +73,7 @@ export default function TimingTower({
       </div>
 
       {/* Table Rows */}
-      <div className="divide-y divide-[#1f2937]/50 overflow-y-auto max-h-[640px] flex-1">
+      <div className="divide-y divide-[#1f2937]/50 overflow-y-auto max-h-160 flex-1">
         {classification.length === 0 ? (
           <div className="p-8 text-center text-gray-400 text-xs">
             Loading telemetry classification...
@@ -84,6 +84,8 @@ export default function TimingTower({
             return (
               <div
                 key={d.driver_number}
+                id={`timing-row-${d.driver_number}`}
+                data-driver-number={d.driver_number}
                 onClick={() => onSelectDriver && onSelectDriver(d.driver_number)}
                 className={`grid grid-cols-12 items-center px-3 py-2 cursor-pointer transition-colors text-xs ${
                   isSelected

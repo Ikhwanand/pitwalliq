@@ -130,6 +130,18 @@ class DatasetCache:
         key = f"laps:{season}:{round_number}:{session_name.lower()}:{str(driver_identifier).lower()}"
         return self.set(key, "laps", season, round_number, session_name, laps, str(driver_identifier))
 
+    def get_ghost_telemetry(
+        self, season: int, round_number: int, session_name: str, driver1: str, driver2: str
+    ) -> dict | None:
+        key = f"ghost:{season}:{round_number}:{session_name.lower()}:{str(driver1).lower()}:{str(driver2).lower()}"
+        return self.get(key)
+
+    def set_ghost_telemetry(
+        self, season: int, round_number: int, session_name: str, driver1: str, driver2: str, data: dict
+    ) -> bool:
+        key = f"ghost:{season}:{round_number}:{session_name.lower()}:{str(driver1).lower()}:{str(driver2).lower()}"
+        return self.set(key, "ghost", season, round_number, session_name, data, f"{driver1}_{driver2}")
+
     def get_stats(self) -> dict:
         """Return cache health, table counts, and database size."""
         stats = {

@@ -1,6 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from backend.app.schemas.common import StandardResponse
-from backend.app.schemas.f1 import CircuitTrackMap, LapData, RaceDashboardData
+from backend.app.schemas.f1 import (
+    CircuitTrackMap,
+    GhostComparisonData,
+    LapData,
+    RaceDashboardData,
+)
 from backend.app.services.f1_service import F1Service, get_f1_service
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
@@ -81,4 +86,34 @@ async def get_cache_stats() -> StandardResponse[dict]:
         data=stats,
         message="Dataset cache statistics retrieved successfully",
     )
+
+
+@router.get("/ghost-comparison", response_model=StandardResponse[GhostComparisonData])
+async def get_ghost_comparison(
+    season: int = Query(..., ge=2018),
+    round_number: int = Query(..., ge=1, le=25),
+    session_name: str = Query(default="Race"),
+    driver1: str = Query(..., description="Driver 1 number or abbreviation (e.g. '1' or 'VER')"),
+    driver2: str = Query(..., description="Driver 2 number or abbreviation (e.g. '16' or 'LEC')"),
+    service: F1Service = Depends(get_f1_service),
+) -> StandardResponse[GhostComparisonData]:
+    """Retrieve synchronized head-to-head lap telemetry comparison (speed trace, delta time, throttle, brake)."""
+    try:
+        data = await service.get_ghost_comparison(
+            season=season,
+            round_number=round_number,
+            session_name=session_name,
+            driver1=driver1,
+            driver2=driver2,
+        )
+        return StandardResponse(
+            data=data,
+            message=f"Ghost comparison generated for {data.driver_1.abbreviation} vs {data.driver_2.abbreviation}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate ghost comparison: {str(e)}",
+        )
+
 

@@ -43,7 +43,15 @@
   - *Pit Window & Clean Air*
   - *Safety Car Plan B Contingency*
 
-### 5. 📊 Real-Time Classification & Telemetry Delta
+### 5. 👻 Data Ghost — Head-to-Head Telemetry Comparator
+- **Synchronized Flying Lap Telemetry**: Directly compare any two drivers' fastest laps interpolated across 240+ normalized distance points.
+- **Multi-Track SVG Telemetry Visualization**:
+  - **Track 1: Speed Trace (km/h)**: Compare top speeds, corner apex minimum speeds, and deceleration rates.
+  - **Track 2: Delta Time ($\Delta t$)**: Dynamic timeline showing where time was won or lost throughout the lap.
+  - **Track 3: Throttle & Brake Dynamics**: Compare pedal input timing—who brakes later and who gets on the gas earlier on corner exit.
+- **Interactive Telemetry HUD**: Hovering across tracks displays real-time speed deltas, throttle %, brake status, and gear selection at that exact meter of the track.
+
+### 6. 📊 Real-Time Classification & Telemetry Delta
 - **Live Classification Table**: Live standings, driver intervals, tyre compound badges, and tyre stint ages.
 - **Pace Comparison Chart**: Interactive lap pace telemetry comparing your selected driver against key rivals (e.g., `VER vs LEC`) with designated pit window zones.
 
@@ -259,6 +267,7 @@ All backend endpoints are prefixed under `/api/v1` and return standardized respo
 | `GET` | `/api/v1/sessions/dashboard` | `season=2026&round_number=1&session_name=Race` | Full classification, tyre stints, and race status |
 | `GET` | `/api/v1/sessions/track-map` | `season=2026&round_number=1&session_name=Race` | Circuit coordinates and corner definitions |
 | `GET` | `/api/v1/sessions/driver-laps` | `season=2026&round_number=1&session_name=Race&driver_number=1` | Lap-by-lap timing, sector deltas, and tyre compounds |
+| `GET` | `/api/v1/sessions/ghost-comparison` | `season=2026&round_number=1&session_name=Race&driver1=1&driver2=16` | Synchronized head-to-head lap telemetry (speed trace, Δt, throttle, brake) |
 | `GET` | `/api/v1/sessions/cache-stats` | — | SQLite persistent cache health, file size, and record counts |
 | `POST`| `/api/v1/strategy/evaluate` | `StrategyRequest` (JSON) | Two-tier Agno AI Strategy evaluation and decision matrix |
 

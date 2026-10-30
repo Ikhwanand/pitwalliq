@@ -93,3 +93,34 @@ class RaceDashboardData(BaseModel):
     total_laps: int
     classification: list[DriverClassification] = Field(default_factory=list)
     track_map: CircuitTrackMap | None = None
+
+
+class GhostTelemetryPoint(BaseModel):
+    distance: float
+    speed_1: float
+    speed_2: float
+    throttle_1: float
+    throttle_2: float
+    brake_1: float
+    brake_2: float
+    gear_1: int
+    gear_2: int
+    drs_1: int
+    drs_2: int
+    delta_time: float
+
+
+class GhostComparisonData(BaseModel):
+    season: int
+    round_number: int
+    session_name: str
+    driver_1: DriverInfo
+    driver_2: DriverInfo
+    lap_time_1: str | None = None
+    lap_time_2: str | None = None
+    lap_number_1: int | None = None
+    lap_number_2: int | None = None
+    delta_final_seconds: float = 0.0
+    faster_driver: str = ""
+    telemetry_points: list[GhostTelemetryPoint] = Field(default_factory=list)
+

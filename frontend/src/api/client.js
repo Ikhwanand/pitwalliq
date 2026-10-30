@@ -58,6 +58,35 @@ export const F1_GRID_DRIVERS = [
   { driver_number: "24", code: "ZHO", name: "Guanyu Zhou", team: "Kick Sauber", team_color: "#52E252" },
 ];
 
+export const F1_GRID_DRIVERS_2026 = [
+  { driver_number: "63", code: "RUS", name: "George Russell", team: "Mercedes", team_color: "#00D7B6" },
+  { driver_number: "12", code: "ANT", name: "Kimi Antonelli", team: "Mercedes", team_color: "#00D7B6" },
+  { driver_number: "16", code: "LEC", name: "Charles Leclerc", team: "Ferrari", team_color: "#E8002D" },
+  { driver_number: "44", code: "HAM", name: "Lewis Hamilton", team: "Ferrari", team_color: "#E8002D" },
+  { driver_number: "1", code: "NOR", name: "Lando Norris", team: "McLaren", team_color: "#FF8000" },
+  { driver_number: "81", code: "PIA", name: "Oscar Piastri", team: "McLaren", team_color: "#FF8000" },
+  { driver_number: "3", code: "VER", name: "Max Verstappen", team: "Red Bull Racing", team_color: "#3671C6" },
+  { driver_number: "6", code: "HAD", name: "Isack Hadjar", team: "Red Bull Racing", team_color: "#3671C6" },
+  { driver_number: "14", code: "ALO", name: "Fernando Alonso", team: "Aston Martin", team_color: "#229971" },
+  { driver_number: "18", code: "STR", name: "Lance Stroll", team: "Aston Martin", team_color: "#229971" },
+  { driver_number: "10", code: "GAS", name: "Pierre Gasly", team: "Alpine", team_color: "#0093CC" },
+  { driver_number: "43", code: "COL", name: "Franco Colapinto", team: "Alpine", team_color: "#0093CC" },
+  { driver_number: "23", code: "ALB", name: "Alexander Albon", team: "Williams", team_color: "#64C4FF" },
+  { driver_number: "55", code: "SAI", name: "Carlos Sainz", team: "Williams", team_color: "#64C4FF" },
+  { driver_number: "30", code: "LAW", name: "Liam Lawson", team: "Racing Bulls", team_color: "#6692FF" },
+  { driver_number: "41", code: "LIN", name: "Arvid Lindblad", team: "Racing Bulls", team_color: "#6692FF" },
+  { driver_number: "31", code: "OCO", name: "Esteban Ocon", team: "Haas F1 Team", team_color: "#B6BABD" },
+  { driver_number: "87", code: "BEA", name: "Oliver Bearman", team: "Haas F1 Team", team_color: "#B6BABD" },
+  { driver_number: "27", code: "HUL", name: "Nico Hulkenberg", team: "Audi", team_color: "#52E252" },
+  { driver_number: "5", code: "BOR", name: "Gabriel Bortoleto", team: "Audi", team_color: "#52E252" },
+  { driver_number: "11", code: "PER", name: "Sergio Perez", team: "Cadillac", team_color: "#C0C0C0" },
+  { driver_number: "77", code: "BOT", name: "Valtteri Bottas", team: "Cadillac", team_color: "#C0C0C0" },
+];
+
+export function getGridDriversForSeason(season = 2026) {
+  return Number(season) === 2026 ? F1_GRID_DRIVERS_2026 : F1_GRID_DRIVERS;
+}
+
 export const EVENT_NAME_TO_CIRCUIT = {
   "albert park": { circuit: "Albert Park Circuit", laps: 58, temp: 21.0, air: 19.4, baseLap: 79.80, name: "Australian Grand Prix" },
   albert: { circuit: "Albert Park Circuit", laps: 58, temp: 21.0, air: 19.4, baseLap: 79.80, name: "Australian Grand Prix" },
@@ -253,7 +282,8 @@ export function getDashboardFallback(roundNumber = 1, season = 2026, sessionName
   const r = Number(roundNumber) || 1;
   const meta = resolveEventMeta(r, eventName);
 
-  const classification = F1_GRID_DRIVERS.map((d, idx) => {
+  const grid = getGridDriversForSeason(season);
+  const classification = grid.map((d, idx) => {
     const gapSec = idx === 0 ? 0 : idx * 2.38 + ((idx % 3) * 0.45);
     const lapSec = meta.baseLap + idx * 0.18 + ((idx % 4) * 0.09);
     const isBoxed = idx === 15;
@@ -565,3 +595,73 @@ export async function evaluateStrategy(payload) {
     };
   }
 }
+
+export async function fetchGhostComparison(season = 2026, roundNumber = 1, sessionName = "Race", driver1 = "1", driver2 = "16") {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(
+      `${API_BASE_URL}/sessions/ghost-comparison?season=${season}&round_number=${roundNumber}&session_name=${encodeURIComponent(sessionName)}&driver1=${driver1}&driver2=${driver2}`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const j = await res.json();
+    if (j && j.data) {
+      return j.data;
+    }
+  } catch (err) {
+    console.warn("Using synthetic ghost comparison fallback:", err.message);
+  }
+
+  // High quality synthetic fallback in case backend is loading cold
+  const numPoints = 150;
+  const length = 5300;
+  const pts = [];
+  let d1Time = 0;
+  let d2Time = 0;
+  for (let i = 0; i < numPoints; i++) {
+    const dist = (i / (numPoints - 1)) * length;
+    const progress = i / numPoints;
+    const baseSpeed = 220 + 90 * Math.sin(progress * Math.PI * 8);
+    const s1 = Math.max(75, Math.min(335, baseSpeed + (Math.sin(i * 0.4) * 12)));
+    const s2 = Math.max(75, Math.min(335, baseSpeed - (Math.cos(i * 0.4) * 10)));
+    const th1 = s1 > 180 ? 100 : Math.max(0, (s1 - 80) * 1.2);
+    const th2 = s2 > 180 ? 100 : Math.max(0, (s2 - 80) * 1.2);
+    const br1 = s1 < 140 ? 1.0 : 0.0;
+    const br2 = s2 < 140 ? 1.0 : 0.0;
+    const stepDist = length / numPoints;
+    d1Time += (stepDist / (s1 / 3.6));
+    d2Time += (stepDist / (s2 / 3.6));
+    pts.push({
+      distance: Math.round(dist),
+      speed_1: Math.round(s1),
+      speed_2: Math.round(s2),
+      throttle_1: Math.round(th1),
+      throttle_2: Math.round(th2),
+      brake_1: br1,
+      brake_2: br2,
+      gear_1: Math.min(8, Math.max(2, Math.floor(s1 / 40))),
+      gear_2: Math.min(8, Math.max(2, Math.floor(s2 / 40))),
+      drs_1: s1 > 280 ? 1 : 0,
+      drs_2: s2 > 280 ? 1 : 0,
+      delta_time: Number((d1Time - d2Time).toFixed(3)),
+    });
+  }
+
+  return {
+    season,
+    round_number: roundNumber,
+    session_name: sessionName,
+    driver_1: { driver_number: driver1, abbreviation: driver1 === "1" ? "VER" : `D${driver1}`, full_name: "Max Verstappen", team_name: "Red Bull Racing", team_color: "#3671C6" },
+    driver_2: { driver_number: driver2, abbreviation: driver2 === "16" ? "LEC" : `D${driver2}`, full_name: "Charles Leclerc", team_name: "Ferrari", team_color: "#E8002D" },
+    lap_time_1: "1:22.358",
+    lap_time_2: "1:22.579",
+    lap_number_1: 18,
+    lap_number_2: 18,
+    delta_final_seconds: -0.221,
+    faster_driver: driver1 === "1" ? "VER" : "LEC",
+    telemetry_points: pts,
+  };
+}
+

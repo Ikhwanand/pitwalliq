@@ -6,6 +6,7 @@ import CircuitMap from "./components/CircuitMap";
 import LapPaceChart from "./components/LapPaceChart";
 import StrategyPanel from "./components/StrategyPanel";
 import Toast from "./components/Toast";
+import DataGhostModal from "./components/DataGhostModal";
 import {
   fetchSeasons,
   fetchEvents,
@@ -52,6 +53,9 @@ export default function App() {
   const [strategyResult, setStrategyResult] = useState(null);
   const [isStrategyLoading, setIsStrategyLoading] = useState(false);
   const [evaluationStage, setEvaluationStage] = useState(0);
+
+  // Data Ghost Telemetry Comparator Modal State
+  const [isGhostModalOpen, setIsGhostModalOpen] = useState(false);
 
   // Helper to trigger toast with auto-dismiss
   const showToast = useCallback((type, title, message, duration = 4000) => {
@@ -130,7 +134,7 @@ export default function App() {
     loadEventsList();
   }, [selectedSeason, selectedRound, selectedSession, showToast]);
 
-  // Load Session Telemetry, Track Map & Driver Laps when Season, Round, or Session changes
+  // Load Session Telemetry & Track Map when Season, Round, or Session changes
   useEffect(() => {
     let isCancelled = false;
 
@@ -157,22 +161,7 @@ export default function App() {
         })
         .catch((err) => console.warn("Dashboard load warning:", err));
 
-      const pLaps = fetchDriverLaps(
-        selectedSeason,
-        selectedRound,
-        selectedSession,
-        String(selectedDriverNumber),
-        String(comparisonDriverNumber),
-        activeEvent?.event_name
-      )
-        .then((laps) => {
-          if (!isCancelled && laps && laps.laps) {
-            setLapPace(laps.laps);
-          }
-        })
-        .catch((err) => console.warn("Driver laps load warning:", err));
-
-      await Promise.allSettled([pMap, pDash, pLaps]);
+      await Promise.allSettled([pMap, pDash]);
 
       if (!isCancelled) {
         showToast("success", "Telemetry Synchronized", `${eventTitle} - ${selectedSession} data loaded successfully.`);
@@ -184,7 +173,37 @@ export default function App() {
     return () => {
       isCancelled = true;
     };
-  }, [selectedSeason, selectedRound, selectedSession, selectedDriverNumber, comparisonDriverNumber, events, showToast]);
+  }, [selectedSeason, selectedRound, selectedSession, events, showToast]);
+
+  // Load Driver Laps when Selected Driver or Comparison Driver changes
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadDriverPace() {
+      const activeEvent = events.find((e) => Number(e.round_number) === Number(selectedRound));
+      try {
+        const laps = await fetchDriverLaps(
+          selectedSeason,
+          selectedRound,
+          selectedSession,
+          String(selectedDriverNumber),
+          String(comparisonDriverNumber),
+          activeEvent?.event_name
+        );
+        if (!isCancelled && laps && laps.laps) {
+          setLapPace(laps.laps);
+        }
+      } catch (err) {
+        console.warn("Driver laps load warning:", err);
+      }
+    }
+
+    loadDriverPace();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedSeason, selectedRound, selectedSession, selectedDriverNumber, comparisonDriverNumber, events]);
 
   // Initial Strategy Load
   useEffect(() => {
@@ -385,6 +404,7 @@ export default function App() {
         sessions={availableSessions}
         selectedSession={selectedSession}
         onSelectSession={setSelectedSession}
+        onOpenDataGhost={() => setIsGhostModalOpen(true)}
       />
 
       {/* Main Pitwall Dashboard Content */}
@@ -431,6 +451,7 @@ export default function App() {
               selectedDriverCode={selectedDriver.code || selectedDriver.driver_number}
               cars={carsOnTrack}
               trackStatus={trackStatus}
+              onSelectDriver={(num) => setSelectedDriverNumber(num)}
             />
             <LapPaceChart
               laps={lapPace}
@@ -441,6 +462,7 @@ export default function App() {
               onSelectDriver2={(drvNum) => setComparisonDriverNumber(drvNum)}
               currentLap={currentLap}
               isPlaying={isPlaying}
+              onOpenDataGhost={() => setIsGhostModalOpen(true)}
             />
           </section>
 
@@ -481,6 +503,22 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Data Ghost Head-to-Head Telemetry Modal */}
+      {isGhostModalOpen && (
+        <DataGhostModal
+          key={`ghost-${selectedDriverNumber}-${comparisonDriverNumber}`}
+          isOpen={isGhostModalOpen}
+          onClose={() => setIsGhostModalOpen(false)}
+          season={selectedSeason}
+          roundNumber={selectedRound}
+          sessionName={selectedSession}
+          eventName={activeEvent ? activeEvent.event_name : "Grand Prix Circuit"}
+          defaultDriver1={selectedDriverNumber}
+          defaultDriver2={comparisonDriverNumber}
+          availableDrivers={dashboard.classification || []}
+        />
+      )}
     </div>
   );
 }

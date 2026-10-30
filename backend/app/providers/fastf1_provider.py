@@ -17,6 +17,8 @@ from backend.app.schemas.f1 import (
     DriverClassification,
     DriverInfo,
     EventSessionSummary,
+    GhostComparisonData,
+    GhostTelemetryPoint,
     GrandPrixEvent,
     LapData,
     RaceDashboardData,
@@ -682,3 +684,169 @@ class FastF1Provider(F1DataProvider):
         return await asyncio.to_thread(
             self._sync_get_track_map, season, round_number, session_name
         )
+
+    def _sync_get_ghost_comparison(
+        self, season: int, round_number: int, session_name: str, driver1: str, driver2: str
+    ) -> GhostComparisonData:
+        """Extract and compare head-to-head lap telemetry for Data Ghost."""
+        # Check SQLite persistent cache first (<1ms)
+        cached = self.db_cache.get_ghost_telemetry(season, round_number, session_name, driver1, driver2)
+        if cached and isinstance(cached, dict):
+            logger.info("Ghost comparison retrieved from SQLite cache (0ms): S%d R%d (%s vs %s)", season, round_number, driver1, driver2)
+            return GhostComparisonData(**cached)
+
+        session_key = (season, round_number, session_name)
+        lock = _get_session_lock(session_key)
+        with lock:
+            if session_key in _session_cache:
+                session = _session_cache[session_key]
+            else:
+                session = fastf1.get_session(season, round_number, session_name)
+                _session_cache[session_key] = session
+
+            try:
+                if getattr(session, "_laps", None) is None or getattr(session, "car_data", None) is None:
+                    session.load(laps=True, telemetry=True, weather=False, messages=False)
+            except Exception as e:
+                logger.warning("Could not load telemetry for ghost comparison: %s", e)
+
+        def get_driver_info(drv_id: str) -> DriverInfo:
+            try:
+                if hasattr(session, "results") and session.results is not None and not session.results.empty:
+                    res_match = session.results[session.results["DriverNumber"] == str(drv_id)]
+                    if not res_match.empty:
+                        row = res_match.iloc[0]
+                        t_color = str(row.get("TeamColor", ""))
+                        if not t_color or t_color == "nan":
+                            t_color = "#3671C6" if drv_id == "1" else "#E8002D"
+                        elif not t_color.startswith("#"):
+                            t_color = f"#{t_color}"
+                        return DriverInfo(
+                            driver_number=str(drv_id),
+                            broadcast_name=str(row.get("BroadcastName", f"Driver {drv_id}")),
+                            full_name=str(row.get("FullName", f"Driver {drv_id}")),
+                            abbreviation=str(row.get("Abbreviation", f"D{drv_id}")),
+                            team_name=str(row.get("TeamName", "Formula 1 Team")),
+                            team_color=t_color,
+                        )
+            except Exception:
+                pass
+            return DriverInfo(
+                driver_number=str(drv_id),
+                broadcast_name=f"Driver {drv_id}",
+                full_name=f"Driver {drv_id}",
+                abbreviation=f"D{drv_id}",
+                team_name="Formula 1 Team",
+                team_color="#3671C6" if drv_id == "1" else "#E8002D",
+            )
+
+        d1_info = get_driver_info(driver1)
+        d2_info = get_driver_info(driver2)
+
+        lap1 = None
+        lap2 = None
+        try:
+            if hasattr(session, "laps") and session.laps is not None and not session.laps.empty:
+                d1_laps = session.laps.pick_drivers([driver1])
+                d2_laps = session.laps.pick_drivers([driver2])
+                lap1 = d1_laps.pick_fastest() if not d1_laps.empty else None
+                lap2 = d2_laps.pick_fastest() if not d2_laps.empty else None
+        except Exception as e:
+            logger.warning("Could not pick fastest laps for drivers: %s", e)
+
+        lap1_str = format_timedelta(lap1.get("LapTime")) if lap1 is not None and pd.notna(lap1.get("LapTime")) else None
+        lap2_str = format_timedelta(lap2.get("LapTime")) if lap2 is not None and pd.notna(lap2.get("LapTime")) else None
+        lap1_num = int(lap1.get("LapNumber", 0)) if lap1 is not None and pd.notna(lap1.get("LapNumber")) else None
+        lap2_num = int(lap2.get("LapNumber", 0)) if lap2 is not None and pd.notna(lap2.get("LapNumber")) else None
+
+        points: list[GhostTelemetryPoint] = []
+        delta_final = 0.0
+        faster_code = d1_info.abbreviation
+
+        if lap1 is not None and lap2 is not None:
+            try:
+                tel1 = lap1.get_car_data().add_distance()
+                tel2 = lap2.get_car_data().add_distance()
+
+                if tel1 is not None and tel2 is not None and not tel1.empty and not tel2.empty:
+                    d_max = float(min(tel1["Distance"].max(), tel2["Distance"].max()))
+                    num_samples = 240
+                    d_grid = np.linspace(0, d_max, num=num_samples)
+
+                    t1_sec = tel1["Time"].dt.total_seconds().values
+                    t2_sec = tel2["Time"].dt.total_seconds().values
+                    dist1 = tel1["Distance"].values
+                    dist2 = tel2["Distance"].values
+
+                    t1_interp = np.interp(d_grid, dist1, t1_sec)
+                    t2_interp = np.interp(d_grid, dist2, t2_sec)
+                    delta_interp = t1_interp - t2_interp
+
+                    s1_interp = np.interp(d_grid, dist1, tel1["Speed"].values)
+                    s2_interp = np.interp(d_grid, dist2, tel2["Speed"].values)
+
+                    th1_interp = np.interp(d_grid, dist1, tel1["Throttle"].values)
+                    th2_interp = np.interp(d_grid, dist2, tel2["Throttle"].values)
+
+                    br1_interp = np.interp(d_grid, dist1, tel1["Brake"].astype(float).values)
+                    br2_interp = np.interp(d_grid, dist2, tel2["Brake"].astype(float).values)
+
+                    g1_interp = np.interp(d_grid, dist1, tel1["nGear"].values)
+                    g2_interp = np.interp(d_grid, dist2, tel2["nGear"].values)
+
+                    drs1_interp = np.interp(d_grid, dist1, tel1["DRS"].values)
+                    drs2_interp = np.interp(d_grid, dist2, tel2["DRS"].values)
+
+                    for i in range(num_samples):
+                        points.append(
+                            GhostTelemetryPoint(
+                                distance=round(float(d_grid[i]), 1),
+                                speed_1=round(float(s1_interp[i]), 1),
+                                speed_2=round(float(s2_interp[i]), 1),
+                                throttle_1=round(float(th1_interp[i]), 1),
+                                throttle_2=round(float(th2_interp[i]), 1),
+                                brake_1=round(float(br1_interp[i]), 2),
+                                brake_2=round(float(br2_interp[i]), 2),
+                                gear_1=int(round(float(g1_interp[i]))),
+                                gear_2=int(round(float(g2_interp[i]))),
+                                drs_1=1 if int(round(float(drs1_interp[i]))) in [10, 12, 14, 1] else 0,
+                                drs_2=1 if int(round(float(drs2_interp[i]))) in [10, 12, 14, 1] else 0,
+                                delta_time=round(float(delta_interp[i]), 4),
+                            )
+                        )
+
+                    delta_final = round(float(delta_interp[-1]), 3)
+                    faster_code = d1_info.abbreviation if delta_final <= 0 else d2_info.abbreviation
+            except Exception as e:
+                logger.error("Error computing ghost telemetry comparison: %s", e)
+
+        comparison_data = GhostComparisonData(
+            season=season,
+            round_number=round_number,
+            session_name=session_name,
+            driver_1=d1_info,
+            driver_2=d2_info,
+            lap_time_1=lap1_str,
+            lap_time_2=lap2_str,
+            lap_number_1=lap1_num,
+            lap_number_2=lap2_num,
+            delta_final_seconds=delta_final,
+            faster_driver=faster_code,
+            telemetry_points=points,
+        )
+
+        if points:
+            self.db_cache.set_ghost_telemetry(
+                season, round_number, session_name, driver1, driver2, comparison_data.model_dump()
+            )
+
+        return comparison_data
+
+    async def get_ghost_comparison(
+        self, season: int, round_number: int, session_name: str, driver1: str, driver2: str
+    ) -> GhostComparisonData:
+        """Fetch head-to-head lap telemetry comparison off the main thread."""
+        return await asyncio.to_thread(
+            self._sync_get_ghost_comparison, season, round_number, session_name, driver1, driver2
+        )
+

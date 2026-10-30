@@ -70,10 +70,18 @@ class TrackCoordinate(BaseModel):
     y: float
 
 
+class TrackCorner(BaseModel):
+    number: int
+    letter: str | None = None
+    x: float
+    y: float
+
+
 class CircuitTrackMap(BaseModel):
     event_name: str
     year: int
     coordinates: list[TrackCoordinate] = Field(default_factory=list)
+    corners: list[TrackCorner] = Field(default_factory=list)
     total_points: int = 0
 
 

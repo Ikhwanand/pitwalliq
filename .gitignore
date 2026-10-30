@@ -34,3 +34,16 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+*.env
+
+# Local Artifacts & Tooling
+graphify-out/
+DEV_GUIDE.md
+PROJECT.md
+skills-lock.json
+skills.lock.json
+docs/
+.serena/
+.agents/
+.ckg/
+.trunk/

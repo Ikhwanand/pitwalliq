@@ -68,3 +68,17 @@ async def get_track_map(
             status_code=500,
             detail=f"Failed to generate circuit map: {str(e)}",
         )
+
+
+@router.get("/cache-stats", response_model=StandardResponse[dict])
+async def get_cache_stats() -> StandardResponse[dict]:
+    """Retrieve persistent SQLite dataset cache status and record counts."""
+    from backend.app.core.dataset_cache import get_dataset_cache
+
+    cache = get_dataset_cache()
+    stats = cache.get_stats()
+    return StandardResponse(
+        data=stats,
+        message="Dataset cache statistics retrieved successfully",
+    )
+

@@ -1,1 +1,70 @@
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    --pitwall-bg: #090d14;
+    --pitwall-card: #111827;
+    --pitwall-border: #1f2937;
+    --pitwall-hover: #1e293b;
+    --racing-red: #e10600;
+    --ai-cyan: #00d2be;
+    --ai-cyan-glow: rgba(0, 210, 190, 0.25);
+    --racing-red-glow: rgba(225, 6, 0, 0.25);
+  }
+
+  body {
+    background-color: var(--pitwall-bg);
+    color: #f9fafb;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Tabular monospace figures for race telemetry */
+.font-tabular {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom scrollbars for technical pitwall feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090d14;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
+/* F1 Radio waveform animation */
+@keyframes radio-pulse {
+  0%, 100% {
+    height: 6px;
+    opacity: 0.5;
+  }
+  50% {
+    height: 28px;
+    opacity: 1;
+  }
+}
+
+.animate-radio-bar {
+  animation: radio-pulse 1.2s ease-in-out infinite;
+}
+
+/* Subtle glowing borders */
+.glow-cyan {
+  box-shadow: 0 0 15px var(--ai-cyan-glow);
+}
+
+.glow-red {
+  box-shadow: 0 0 15px var(--racing-red-glow);
+}

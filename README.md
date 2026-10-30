@@ -4,31 +4,37 @@
 [![React](https://img.shields.io/badge/React-19.0+-61DAFB.svg?style=flat&logo=react&logoColor=black)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-6.0+-646CFF.svg?style=flat&logo=vite&logoColor=white)](https://vitejs.dev)
 [![FastF1](https://img.shields.io/badge/FastF1-3.4+-E10600.svg?style=flat&logo=formula1&logoColor=white)](https://docs.fastf1.dev)
+[![SQLite](https://img.shields.io/badge/SQLite-WAL_Cache-003B57.svg?style=flat&logo=sqlite&logoColor=white)](https://www.sqlite.org)
 [![Agno AI](https://img.shields.io/badge/Agno-Multi--Agent-FF6B6B.svg?style=flat)](https://agno.com)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38B2AC.svg?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 
-**PitwallIQ** is a mission-control Formula 1 tactical race engineering dashboard. It combines authentic GPS telemetry data, dynamic track geometry, real-time race simulation playback, and an autonomous **2-Tier Agno Multi-Agent AI Strategy Directorate** to deliver real-time pitstop strategy, undercut/overcut analysis, and tyre degradation predictions.
+**PitwallIQ** is a mission-control Formula 1 tactical race engineering dashboard. It unites authentic GPS car telemetry, smoothed vector track geometry, real-time race simulation playback, persistent local SQLite caching, and an autonomous **2-Tier Agno Multi-Agent AI Strategy Directorate** to deliver real-time pitstop strategy, undercut/overcut calculations, and tyre degradation predictions.
 
 ---
 
 ## 📸 Key Features
 
 ### 1. 🗺️ High-Fidelity Telemetry Circuit Map
-- **Authentic Track Geometry**: 40+ official circuits (Bahrain, Jeddah, Suzuka, Monaco, Spa, Silverstone, etc.) mapped via real GPS telemetry coordinates.
-- **Catmull-Rom Cubic Bezier Smoothing**: Converts raw telemetry coordinate arrays into fluid, continuous racing tracks without sharp polygon kinks.
-- **Dynamic Corner Markers**: Automatically detects turns (e.g. `T1` through `T15`) via official corner telemetry and curvature vectors.
+- **Authentic Track Geometry**: 40+ official circuits (Bahrain, Jeddah, Albert Park, Suzuka, Shanghai, Monaco, Spa, Silverstone, etc.) mapped via authentic GPS telemetry coordinates.
+- **Catmull-Rom Cubic Bezier Smoothing**: Transforms raw telemetry coordinates into fluid, continuous SVG racing tracks without sharp polygon kinks.
+- **Dynamic Corner Markers**: Automatically detects turns (e.g., `T1` through `T16`) using official corner telemetry and curvature vectors.
 - **Motorsport Start/Finish Gate**: True-to-life perpendicular start/finish line with red & white racing stripes.
-- **Real-Time Car Blips**: Visualizes top 10 cars with official team colors, driver pills (`VER`, `PER`, `LEC`), and focus glow on the selected target driver.
+- **Real-Time Car Blips**: Visualizes top 10 cars with official team liveries, driver pills (`VER`, `LEC`, `HAM`, `NOR`), and focus glow on the selected target driver.
 
-### 2. ⏱️ Motorsport Simulation & Playback Engine
-- **Realistic Telemetry Pace**: Configured to match real F1 lap times (~75–80s per lap at `1x` real-time), preventing frantic car movements.
+### 2. ⚡ Zero-Latency Persistent Dataset Caching
+- **SQLite WAL Mode Engine**: Normalized F1 telemetry payloads (dashboards, track layouts, driver lap records) are cached persistently in SQLite with WAL mode (`PRAGMA journal_mode=WAL`), delivering **< 0.5 ms** retrieval times.
+- **CLI Dataset Prefetcher**: Background CLI tool to warm up seasons and rounds ahead of time (`python -m backend.scripts.prefetch_dataset`), completely eliminating cold FastF1 download hangs during frontend browsing.
+- **High-Precision Circuit Database**: Built-in 40+ circuit catalog with instant fallbacks if external network requests are unavailable.
+
+### 3. ⏱️ Motorsport Simulation & Playback Engine
+- **Realistic Telemetry Pace**: Configured to match real F1 lap times (~75–80s per lap at `1x` real-time), preventing frantic, unnatural car movements.
 - **Speed Multipliers**: Granular speed controls (`1x`, `2x`, `4x`, `8x`).
 - **Interactive Scenarios**:
   - **Safety Car**: Deploys the Safety Car in front of the race leader with automatic pit window triggers.
   - **Box Call**: Triggers an instant pitstop simulation for fresh tyre compounds (`SOFT`, `MEDIUM`, `HARD`).
   - **Interactive Lap Scrubber**: Jump to any lap of the Grand Prix.
 
-### 3. 🧠 Agno 2-Tier AI Pitwall Directorate
+### 4. 🧠 Agno 2-Tier AI Pitwall Directorate
 - **Tier 1 — Telemetry Analyst Agent**: Analyzes sector deltas, tyre wear trajectories, stint progression, and gap evolution against rival drivers.
 - **Tier 2 — Chief Race Strategist Agent**: Evaluates pitstop windows, undercut feasibility, track position delta, and contingency plans (Plan A / Plan B / Safety Car).
 - **Quick Tactical Pills**: 1-click execution for standard race engineer questions:
@@ -37,8 +43,8 @@
   - *Pit Window & Clean Air*
   - *Safety Car Plan B Contingency*
 
-### 4. 📊 Real-Time Classification & Telemetry Delta
-- **Live Classification Table**: Live standings, driver intervals, tyre compound badges, and tyre ages.
+### 5. 📊 Real-Time Classification & Telemetry Delta
+- **Live Classification Table**: Live standings, driver intervals, tyre compound badges, and tyre stint ages.
 - **Pace Comparison Chart**: Interactive lap pace telemetry comparing your selected driver against key rivals (e.g., `VER vs LEC`) with designated pit window zones.
 
 ---
@@ -47,20 +53,20 @@
 
 ```mermaid
 graph TD
-    A[FastF1 Official API] -->|Telemetry / GPS / Laps| B[FastF1 Provider & Disk Cache]
-    B --> C[FastAPI Backend Engine]
-    
-    C -->|Session & Track Data| D[REST API Endpoints]
+    A[FastF1 Official API] -->|Raw Telemetry / Laps / GPS| B[FastF1 Provider]
+    B -->|Normalize & Store| C[(SQLite Dataset Cache - WAL)]
+    C -->|Sub-millisecond Retrieval| B
+    B --> D[FastAPI Backend REST API]
     
     subgraph "AI Strategy Directorate (Agno)"
-        E[Telemetry Analyst Agent] -->|Degradation & Deltas| F[Chief Strategist Agent]
-        F -->|OpenRouter LLM| G[Tactical Recommendations]
+        E[Telemetry Analyst Agent] -->|Grounded Situation Brief| F[Chief Race Strategist Agent]
+        F -->|OpenRouter / Gemini / OpenAI| G[Strategy Decision Matrix]
     end
     
-    C --> E
+    D --> E
     G --> D
     
-    D -->|JSON / SSE| H[Frontend (React 19 + Vite)]
+    D -->|JSON REST Endpoints| H[Frontend - React 19 + Vite]
     H --> I[SVG Circuit Map Engine]
     H --> J[Simulation Playback Engine]
     H --> K[Race Classification Table]
@@ -77,26 +83,33 @@ pitwalliq/
 │   ├── app/
 │   │   ├── main.py                     # FastAPI application entrypoint
 │   │   ├── core/
-│   │   │   └── config.py               # Settings & environment configuration
+│   │   │   ├── config.py               # Pydantic BaseSettings & env loader
+│   │   │   └── dataset_cache.py        # SQLite persistent dataset cache engine
 │   │   ├── api/v1/
 │   │   │   ├── router.py               # Central API router
-│   │   │   ├── seasons.py              # Seasons & calendar endpoints
+│   │   │   ├── seasons.py              # Seasons & championship calendar endpoints
 │   │   │   ├── events.py               # Grand Prix weekend events
-│   │   │   ├── sessions.py             # Practice, Quali, Race sessions
-│   │   │   └── strategy.py             # Agno AI strategy chat & recommendations
+│   │   │   ├── sessions.py             # Dashboard, driver laps, track map, cache stats
+│   │   │   └── strategy.py             # Agno AI strategy evaluation endpoint
 │   │   ├── agents/
 │   │   │   ├── analyst.py              # Agno Telemetry Analyst agent
-│   │   │   └── strategist.py           # Agno Chief Race Strategist agent
+│   │   │   ├── strategist.py           # Agno Chief Race Strategist agent
+│   │   │   └── workflow.py             # Two-Tier Race Strategy Workflow orchestration
 │   │   ├── providers/
 │   │   │   ├── base.py                 # Abstract F1 provider interface
-│   │   │   └── fastf1_provider.py      # FastF1 telemetry adapter & disk caching
+│   │   │   └── fastf1_provider.py      # FastF1 telemetry adapter & L2 cache layer
 │   │   ├── schemas/
 │   │   │   ├── common.py               # Standardized response envelopes
 │   │   │   ├── f1.py                   # Pydantic models for F1 data
 │   │   │   └── strategy.py             # Strategy request & recommendation schemas
 │   │   └── data/
-│   │       └── circuits.json           # GPS coordinates for 40+ F1 circuits
-│   ├── cache/fastf1/                   # Local FastF1 disk cache (git-ignored)
+│   │       └── circuits.json           # GPS coordinates for 40+ official F1 circuits
+│   ├── scripts/
+│   │   ├── prefetch_dataset.py         # CLI tool to prefetch and warm up SQLite cache
+│   │   └── process_circuits.py         # Circuit geometry normalization helper
+│   ├── cache/
+│   │   ├── pitwall_dataset.db          # Persistent SQLite database (git-ignored)
+│   │   └── fastf1/                     # FastF1 raw disk cache (git-ignored)
 │   ├── requirements.txt                # Python backend dependencies
 │   └── .env.example                    # Backend environment configuration template
 │
@@ -106,13 +119,13 @@ pitwalliq/
 │   │   ├── App.jsx                     # Mission-control dashboard container
 │   │   ├── index.css                   # Tailwind CSS styling & animations
 │   │   ├── api/
-│   │   │   └── client.js               # API client with fallback circuits
+│   │   │   └── client.js               # API client with fallbacks & auto-retry
 │   │   ├── components/
 │   │   │   ├── CircuitMap.jsx          # SVG Track & live car blip renderer
 │   │   │   ├── SimulationControls.jsx  # Playback & speed controls
 │   │   │   ├── ClassificationTable.jsx # Live driver standings
 │   │   │   ├── TelemetryChart.jsx      # Recharts lap delta comparison
-│   │   │   ├── StrategyDirectorate.jsx # AI pitwall strategist chat
+│   │   │   ├── StrategyDirectorate.jsx # AI pitwall strategist chat & decision matrix
 │   │   │   └── Toast.jsx               # Notifications banner
 │   │   └── data/
 │   │       └── circuits.json           # Client-side circuit geometry fallback
@@ -130,14 +143,14 @@ pitwalliq/
 ### Prerequisites
 - **Python**: `3.11` or `3.12`
 - **Node.js**: `18.x` or `20.x` (with `npm`)
-- **OpenRouter API Key** (for AI Strategy Directorate)
-- **F1TV Account** (optional, for authenticated FastF1 live timing data)
+- **AI Model Key**: An [OpenRouter](https://openrouter.ai/) API key, [Google Gemini](https://aistudio.google.com/) API key, or [OpenAI](https://platform.openai.com/) API key.
+- **F1 Account** (optional, for authenticated FastF1 live timing data)
 
 ---
 
 ### 1. Backend Setup
 
-1. **Navigate to the backend directory and activate a virtual environment:**
+1. **Navigate to the backend directory and set up a virtual environment:**
    ```bash
    cd backend
    python -m venv .venv
@@ -159,28 +172,39 @@ pitwalliq/
    ```bash
    cp .env.example .env
    ```
-   Fill in your configuration:
+   Edit `.env` with your preferred model provider:
    ```env
-   PROJECT_NAME=PitwallIQ
-   DEBUG=True
-   CORS_ORIGINS=["http://localhost:5173", "http://127.0.0.1:5173"]
-   
-   # AI Strategy Engine
+   # OpenRouter Configuration
    OPENROUTER_API_KEY=your_openrouter_api_key_here
    OPENROUTER_MODEL=anthropic/claude-3.5-sonnet  # or deepseek/deepseek-chat
-   
-   # FastF1 Grounding (Optional)
-   F1_USERNAME=your_f1_account_email
-   F1_PASSWORD=your_f1_account_password
-   FASTF1_CACHE_DIR=cache/fastf1
+   OPENROUTER_DECISION_MODEL=anthropic/claude-3.5-sonnet
+
+   # Google Gemini (Alternative)
+   GEMINI_API_KEY=your_gemini_api_key_here
+   GEMINI_MODEL=gemini-2.0-flash
+
+   # FastF1 Settings (Optional)
+   FASTF1_CACHE_ENABLED=true
+   F1_USERNAME="your_f1_account_email"
+   F1_PASSWORD="your_f1_account_password"
    ```
 
-4. **Start the FastAPI backend server:**
+4. **(Recommended) Pre-fetch F1 Datasets into SQLite:**
+   Warm up the cache for Season 2026 Round 1 & Round 2 (or any season) so frontend requests respond instantly:
+   ```bash
+   # From the workspace root:
+   python -m backend.scripts.prefetch_dataset --season 2026 --rounds 1 2
+   
+   # Inspect SQLite cache stats:
+   python -m backend.scripts.prefetch_dataset --stats
+   ```
+
+5. **Start the FastAPI backend server:**
    ```bash
    uvicorn backend.app.main:app --reload --port 8000
    ```
-   The backend API will be running at `http://127.0.0.1:8000`.  
-   Interactive API docs (Swagger): `http://127.0.0.1:8000/docs`
+   - API Root: `http://127.0.0.1:8000`
+   - Interactive Swagger Docs: `http://127.0.0.1:8000/docs`
 
 ---
 
@@ -204,37 +228,74 @@ pitwalliq/
 
 ---
 
-## 📡 Key API Endpoints
+## ⚡ CLI Dataset Prefetcher Guide
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/v1/seasons` | Available championship seasons (2018–2024) |
-| `GET` | `/api/v1/events?year={year}` | List of Grand Prix events for a season |
-| `GET` | `/api/v1/sessions?year={year}&round_number={round}` | Sessions (FP1, FP2, FP3, Quali, Race) |
-| `GET` | `/api/v1/dashboard?year={y}&round_number={r}&session_name={s}` | Full telemetry, classification, and track status |
-| `GET` | `/api/v1/track-map?year={y}&round_number={r}&session_name={s}` | GPS coordinates & corner definitions |
-| `GET` | `/api/v1/laps?year={y}&round_number={r}&session_name={s}` | Lap times & stint details per driver |
-| `POST`| `/api/v1/strategy/chat` | Chat with Agno Chief Race Strategist |
-| `POST`| `/api/v1/strategy/recommend` | Structured AI pit strategy assessment |
+FastF1 downloads 50–150 MB of raw Pandas DataFrames per race session. The built-in CLI prefetcher processes and caches only the lightweight normalized JSON records in SQLite, ensuring instant frontend navigation:
+
+```bash
+# Prefetch Season 2026 Round 1 (Australian GP) and Round 2 (Chinese GP):
+python -m backend.scripts.prefetch_dataset --season 2026 --rounds 1 2
+
+# Prefetch all rounds for Season 2026:
+python -m backend.scripts.prefetch_dataset --season 2026 --all-rounds
+
+# Prefetch specific historical rounds (e.g., 2024 Rounds 1 to 3):
+python -m backend.scripts.prefetch_dataset --season 2024 --rounds 1 2 3
+
+# View database size and entry breakdown:
+python -m backend.scripts.prefetch_dataset --stats
+```
+
+---
+
+## 📡 API Reference
+
+All backend endpoints are prefixed under `/api/v1` and return standardized responses:
+
+| Method | Endpoint | Query / Body Parameters | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/seasons` | — | List of supported F1 championship seasons |
+| `GET` | `/api/v1/events` | `season=2026` | List of Grand Prix events for a season |
+| `GET` | `/api/v1/sessions/dashboard` | `season=2026&round_number=1&session_name=Race` | Full classification, tyre stints, and race status |
+| `GET` | `/api/v1/sessions/track-map` | `season=2026&round_number=1&session_name=Race` | Circuit coordinates and corner definitions |
+| `GET` | `/api/v1/sessions/driver-laps` | `season=2026&round_number=1&session_name=Race&driver_number=1` | Lap-by-lap timing, sector deltas, and tyre compounds |
+| `GET` | `/api/v1/sessions/cache-stats` | — | SQLite persistent cache health, file size, and record counts |
+| `POST`| `/api/v1/strategy/evaluate` | `StrategyRequest` (JSON) | Two-tier Agno AI Strategy evaluation and decision matrix |
+
+### Example Strategy Request Payload
+```json
+{
+  "season": 2026,
+  "round_number": 1,
+  "session_name": "Race",
+  "driver_number": "1",
+  "rival_driver_numbers": ["16", "44"],
+  "current_lap": 18,
+  "query": "Assess undercut viability against Leclerc. Should we box this lap?"
+}
+```
 
 ---
 
 ## 🛠️ Git Clean Commit Guide
 
-If you previously committed unwanted folders (e.g. `.agents/`, `graphify-out/`, `DEV_GUIDE.md`, etc.), run the following commands to untrack them without deleting them from your hard drive:
+To commit the repository cleanly without untracked artifacts or local skill files:
 
 ```bash
-# Untrack all ignored folders and files
+# 1. Untrack local build artifacts and configuration files (if tracked previously)
 git rm -r --cached .agents graphify-out DEV_GUIDE.md PROJECT.md skills-lock.json
 
-# Verify status
+# 2. Stage only project files
+git add backend/ frontend/ .gitignore README.md
+
+# 3. Check status to ensure no .db or cache files are staged
 git status
 
-# Commit cleanly
-git commit -m "chore: remove untracked local artifacts and update documentation"
+# 4. Commit cleanly
+git commit -m "feat: complete PitwallIQ with SQLite persistent caching and Agno AI Strategy Directorate"
 ```
 
 ---
 
 ## 📄 License
-MIT License. Developed for Formula 1 motorsport analysis and tactical simulation research.
+MIT License. Developed for Formula 1 motorsport analysis, telemetry visualization, and tactical AI research.
